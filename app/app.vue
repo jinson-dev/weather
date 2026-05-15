@@ -486,6 +486,16 @@ function leafStyle(n: number): string {
       <!-- Clear day sun glow -->
       <span v-if="condition?.bg === 'clear-day'" class="wx-sun-glow"></span>
     </div>
+
+    <!-- Header Section -->
+    <header class="app-header">
+      <div class="logo-container">
+        <img src="/logo.png" alt="SkyCast Logo" class="app-logo" />
+        <span class="app-name">SkyCast</span>
+      </div>
+    </header>
+
+    <div class="search-container" @focusout="e => { if (e.currentTarget && !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) showSuggestions = false }">
     <div class="search-container" @focusout="e => { if (e.currentTarget && !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) showSuggestions = false }">
       <input
         id="city-search"
@@ -567,8 +577,15 @@ function leafStyle(n: number): string {
 
           <!-- ① Current Weather Card -->
           <div class="glass-card current-weather" v-if="weatherData">
-            <p class="location-name">{{ weatherData?.location?.name }}</p>
-            <p class="location-country">{{ weatherData?.location?.country }}</p>
+            <div class="current-header">
+              <div class="location-info">
+                <p class="location-name">{{ weatherData?.location?.name }}</p>
+                <p class="location-country">{{ weatherData?.location?.country }}</p>
+              </div>
+              <div class="current-time">
+                {{ new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) }}
+              </div>
+            </div>
 
             <!-- Weather Icon (SVG inline based on condition) -->
             <div class="weather-icon-large">

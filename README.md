@@ -1,75 +1,68 @@
-# Nuxt Minimal Starter
+# 🌦️ SkyCast - Premium Weather Experience
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+SkyCast is a high-fidelity, real-time weather application built with **Nuxt 4** and **Vue 3**. It features a stunning glass-morphic UI, dynamic weather particle effects, and AI-driven weather insights to provide a truly immersive forecasting experience.
 
-## Setup
+![SkyCast Favicon](public/favicon.png)
 
-Make sure to install dependencies:
+## ✨ Features
 
-```bash
-# npm
-npm install
+- **Real-time Forecasts**: Accurate data powered by the Open-Meteo API.
+- **Dynamic Aesthetics**: The interface evolves based on weather conditions (Clear, Rain, Snow, Thunderstorm, Fog).
+- **Immersive FX**: Custom particle systems for rain, snow, stars, and even independent lightning bolts.
+- **AI Weather Insights**: Context-aware advice on what to wear and activity recommendations based on current conditions.
+- **Smart Search**: Fast city search with autocomplete suggestions.
+- **Geolocation**: Instant local weather with one-click location access.
+- **Responsive Design**: Premium look and feel across all device sizes.
 
-# pnpm
-pnpm install
+## 🚀 Tech Stack
 
-# yarn
-yarn install
+- **Framework**: [Nuxt 4](https://nuxt.com/)
+- **Frontend**: [Vue 3](https://vuejs.org/) (Composition API)
+- **Data Source**: [Open-Meteo API](https://open-meteo.com/)
+- **Styling**: Vanilla CSS with modern Glassmorphism principles.
 
-# bun
-bun install
-```
+## 🛠️ Installation & Setup
 
-## Development Server
+1. **Clone and install dependencies**:
+   ```bash
+   npm install
+   ```
 
-Start the development server on `http://localhost:3000`:
+2. **Run in development mode**:
+   ```bash
+   npm run dev
+   ```
 
-```bash
-# npm
-npm run dev
+3. **Build for production**:
+   ```bash
+   npm run build
+   ```
 
-# pnpm
-pnpm dev
+## 🗺️ Project Roadmap
 
-# yarn
-yarn dev
+Below are the planned enhancements for SkyCast:
 
-# bun
-bun run dev
-```
+### Phase 1: Core Architecture & Maintenance
+- [ ] **Component Refactoring**: Split `app.vue` into modular components (WeatherCard, ForecastList, AIPanel).
+- [ ] **Unit Toggle**: Support for Fahrenheit, mph, and imperial measurements.
+- [ ] **Accessibility (A11y)**: Full keyboard navigation and enhanced ARIA descriptions.
 
-## Production
+### Phase 2: User Personalization
+- [ ] **Saved Locations**: Local storage support to "favorite" and quickly switch between multiple cities.
+- [ ] **Theme Customization**: User-selectable accent colors and glass opacity levels.
 
-Build the application for production:
+### Phase 3: Advanced Data & Visuals
+- [ ] **Air Quality Index (AQI)**: Detailed breakdown of pollutants and health advice.
+- [ ] **Historical Trends**: 24-hour temperature and precipitation charts.
+- [ ] **Radar Integration**: Interactive weather maps showing precipitation patterns.
 
-```bash
-# npm
-npm run build
+### Phase 4: Social & Sharing
+- [ ] **Dynamic OG Images**: Automatically generated social sharing cards showing local weather.
+- [ ] **Shareable Links**: Deep links to specific city forecasts.
 
-# pnpm
-pnpm build
+## 📄 License
 
-# yarn
-yarn build
+This project is open-source and available under the [MIT License](LICENSE).
 
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+---
+*Created with ❤️ by the SkyCast Team.*
