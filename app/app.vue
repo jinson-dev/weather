@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, computed, watchEffect, onMounted } from 'vue'
 // Open-Meteo WMO weather code mappings
 const WMO_CODES: Record<number, { label: string; icon: string; bg: string }> = {
   0:  { label: 'Clear Sky',        icon: 'sun',          bg: 'clear-day'    },
@@ -144,11 +145,13 @@ const bgStyle = computed(() => ({
 }))
 
 // Sync body background so the full viewport matches — fixes grey bleed-through
-watchEffect(() => {
-  if (import.meta.client) {
-    document.body.style.background = BG_GRADIENTS[condition.value?.bg || 'clear-day'] ?? BG_GRADIENTS['clear-day']
-    document.body.style.transition = 'background 1.4s ease'
-  }
+onMounted(() => {
+  watchEffect(() => {
+    if (import.meta.client) {
+      document.body.style.background = BG_GRADIENTS[condition.value?.bg || 'clear-day'] ?? BG_GRADIENTS['clear-day']
+      document.body.style.transition = 'background 1.4s ease'
+    }
+  })
 })
 
 
@@ -167,8 +170,8 @@ const nextHours = computed(() => {
   const h = weatherData.value.hourly
   return h.time.slice(start, start + 14).map((t, i) => {
     const idx = start + i
-    const temp = Math.round(h.temperature_2m[idx])
-    const feels = Math.round(h.apparent_temperature[idx])
+    const temp = Math.round(h.temperature_2m[idx] ?? 0)
+    const feels = Math.round(h.apparent_temperature[idx] ?? 0)
     const prevTemp = Math.round(h.temperature_2m[idx - 1] ?? temp)
     const rain = h.precipitation_probability[idx] ?? 0
     const wind = Math.round(h.wind_speed_10m[idx] ?? 0)
@@ -196,12 +199,12 @@ const dailyForecast = computed(() => {
   if (!weatherData.value) return []
   return weatherData.value.daily.time.map((d, i) => ({
     day: i === 0 ? 'Today' : new Date(d).toLocaleDateString('en-US', { weekday: 'short' }),
-    hi: Math.round(weatherData.value!.daily.temperature_2m_max[i]),
-    lo: Math.round(weatherData.value!.daily.temperature_2m_min[i]),
-    code: weatherData.value!.daily.weather_code[i],
-    rain: Math.round(weatherData.value!.daily.precipitation_sum[i] * 10) / 10,
-    rainChance: weatherData.value!.daily.precipitation_probability_max[i],
-    windMax: Math.round(weatherData.value!.daily.wind_speed_10m_max[i]),
+    hi: Math.round(weatherData.value!.daily.temperature_2m_max[i] ?? 0),
+    lo: Math.round(weatherData.value!.daily.temperature_2m_min[i] ?? 0),
+    code: weatherData.value!.daily.weather_code[i] ?? 0,
+    rain: Math.round((weatherData.value!.daily.precipitation_sum[i] ?? 0) * 10) / 10,
+    rainChance: weatherData.value!.daily.precipitation_probability_max[i] ?? 0,
+    windMax: Math.round(weatherData.value!.daily.wind_speed_10m_max[i] ?? 0),
     uvMax: Math.round(weatherData.value!.daily.uv_index_max?.[i] ?? 0),
     sunrise: weatherData.value!.daily.sunrise[i]?.slice(11, 16),
     sunset: weatherData.value!.daily.sunset[i]?.slice(11, 16),
@@ -211,18 +214,18 @@ const dailyForecast = computed(() => {
 const weatherSummary = computed(() => {
   if (!weatherData.value) return ''
   const d = weatherData.value.daily
-  const tomorrow = WMO_CODES[d.weather_code[1]] || WMO_CODES[0]
-  const hiTomorrow = Math.round(d.temperature_2m_max[1])
-  const loTomorrow = Math.round(d.temperature_2m_min[1])
-  const dayAfter = WMO_CODES[d.weather_code[2]] || WMO_CODES[0]
-  return `Tomorrow: ${tomorrow.label}, ${loTomorrow}–${hiTomorrow}°C. ${dayAfter.label} expected ${new Date(d.time[2]).toLocaleDateString('en-US', { weekday: 'long' })}.`
+  const tomorrow = WMO_CODES[d.weather_code[1] ?? 0] || WMO_CODES[0]
+  const hiTomorrow = Math.round(d.temperature_2m_max[1] ?? 0)
+  const loTomorrow = Math.round(d.temperature_2m_min[1] ?? 0)
+  const dayAfter = WMO_CODES[d.weather_code[2] ?? 0] || WMO_CODES[0]
+  return `Tomorrow: ${tomorrow.label}, ${loTomorrow}–${hiTomorrow}°C. ${dayAfter.label} expected ${new Date(d.time[2] ?? '').toLocaleDateString('en-US', { weekday: 'long' })}.`
 })
 
 // Today's rain chance from daily forecast (index 0)
 const todayRain = computed(() => {
   if (!weatherData.value) return null
   const chance = weatherData.value.daily.precipitation_probability_max[0] ?? 0
-  const sum    = Math.round(weatherData.value.daily.precipitation_sum[0] * 10) / 10
+  const sum    = Math.round((weatherData.value.daily.precipitation_sum[0] ?? 0) * 10) / 10
   let label = 'Unlikely'
   let color = 'rgba(255,255,255,0.15)'
   let text  = 'rgba(255,255,255,0.5)'
@@ -324,7 +327,7 @@ async function fetchByCoords(lat: number, lon: number, locationName?: string) {
       `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset` +
       `&timezone=auto&forecast_days=7`
     )
-    weatherData.value = { ...res, location: { name: resolvedName!, country: resolvedCountry } }
+    weatherData.value = { ...res, location: { name: resolvedName || 'My Location', country: resolvedCountry } }
     // Persist so next refresh restores this location
     if (import.meta.client) {
       localStorage.setItem('weather_last', JSON.stringify({ lat, lon, name: resolvedName, country: resolvedCountry }))
@@ -348,7 +351,9 @@ async function fetchWeather(city: string = 'London') {
 
     const { latitude, longitude, name, country } = geoRes.results[0]
     await fetchByCoords(latitude, longitude, name)
-    weatherData.value!.location = { name, country }
+    if (weatherData.value) {
+      weatherData.value.location = { name, country }
+    }
     searchQuery.value = ''
   } catch (err: any) {
     error.value = err.message || 'Failed to fetch weather data'
@@ -481,7 +486,7 @@ function leafStyle(n: number): string {
       <!-- Clear day sun glow -->
       <span v-if="condition?.bg === 'clear-day'" class="wx-sun-glow"></span>
     </div>
-    <div class="search-container" @focusout="e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) showSuggestions = false }">
+    <div class="search-container" @focusout="e => { if (e.currentTarget && !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) showSuggestions = false }">
       <input
         id="city-search"
         v-model="searchQuery"
@@ -561,9 +566,9 @@ function leafStyle(n: number): string {
         <div class="weather-top-row">
 
           <!-- ① Current Weather Card -->
-          <div class="glass-card current-weather">
-            <p class="location-name">{{ weatherData.location.name }}</p>
-            <p class="location-country">{{ weatherData.location.country }}</p>
+          <div class="glass-card current-weather" v-if="weatherData">
+            <p class="location-name">{{ weatherData?.location?.name }}</p>
+            <p class="location-country">{{ weatherData?.location?.country }}</p>
 
             <!-- Weather Icon (SVG inline based on condition) -->
             <div class="weather-icon-large">
@@ -628,15 +633,15 @@ function leafStyle(n: number): string {
                 <path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/>
                 <polyline points="13 11 9 17 15 17 11 23"/>
               </svg>
-              <span v-else>☁️</span>
+              <span v-else class="i-fallback">☁️</span>
             </div>
 
             <div class="temp-display">
-              <span class="temp-big">{{ Math.round(weatherData.current.temperature_2m) }}</span>
+              <span class="temp-big">{{ Math.round(weatherData?.current?.temperature_2m ?? 0) }}</span>
               <span class="temp-deg">°C</span>
             </div>
             <p class="condition-label">{{ condition?.label }}</p>
-            <p class="feels-like">Feels like {{ Math.round(weatherData.current.apparent_temperature) }}°C</p>
+            <p class="feels-like">Feels like {{ Math.round(weatherData?.current?.apparent_temperature ?? 0) }}°C</p>
 
           <!-- Today's Rain Chance Badge -->
           <div v-if="todayRain" class="rain-badge" :style="{ background: todayRain.color }">
@@ -669,42 +674,42 @@ function leafStyle(n: number): string {
           <div class="details-grid details-grid-3" style="margin-top: 1.2rem">
             <div class="detail-item">
               <span class="detail-label">Humidity</span>
-              <span class="detail-value">{{ weatherData.current.relative_humidity_2m }}<span class="detail-unit">%</span></span>
+              <span class="detail-value">{{ weatherData?.current?.relative_humidity_2m }}<span class="detail-unit">%</span></span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Wind</span>
-              <span class="detail-value">{{ Math.round(weatherData.current.wind_speed_10m) }}<span class="detail-unit"> km/h</span></span>
-              <span class="detail-unit">{{ getWindDir(weatherData.current.wind_direction_10m) }}</span>
+              <span class="detail-value">{{ Math.round(weatherData?.current?.wind_speed_10m ?? 0) }}<span class="detail-unit"> km/h</span></span>
+              <span class="detail-unit">{{ getWindDir(weatherData?.current?.wind_direction_10m) }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Gusts</span>
-              <span class="detail-value">{{ Math.round(weatherData.current.wind_gusts_10m ?? 0) }}<span class="detail-unit"> km/h</span></span>
+              <span class="detail-value">{{ Math.round(weatherData?.current?.wind_gusts_10m ?? 0) }}<span class="detail-unit"> km/h</span></span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Cloud Cover</span>
-              <span class="detail-value">{{ weatherData.current.cloud_cover ?? '&mdash;' }}<span class="detail-unit">%</span></span>
+              <span class="detail-value">{{ weatherData?.current?.cloud_cover ?? '&mdash;' }}<span class="detail-unit">%</span></span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Visibility</span>
-              <span class="detail-value">{{ weatherData.current.visibility != null ? Math.round(weatherData.current.visibility / 1000) : '&mdash;' }}<span class="detail-unit"> km</span></span>
+              <span class="detail-value">{{ weatherData?.current?.visibility != null ? Math.round((weatherData?.current?.visibility ?? 0) / 1000) : '&mdash;' }}<span class="detail-unit"> km</span></span>
             </div>
             <div class="detail-item">
               <span class="detail-label">UV Index</span>
-              <span class="detail-value">{{ weatherData.current.uv_index ?? '&mdash;' }}</span>
+              <span class="detail-value">{{ weatherData?.current?.uv_index ?? '&mdash;' }}</span>
               <div class="uv-bar-bg">
-                <div class="uv-bar-fill" :style="{ width: Math.min((weatherData.current.uv_index ?? 0) / 11 * 100, 100) + '%' }"></div>
+                <div class="uv-bar-fill" :style="{ width: Math.min((weatherData?.current?.uv_index ?? 0) / 11 * 100, 100) + '%' }"></div>
               </div>
             </div>
           </div>
           </div><!-- /current-weather card -->
 
           <!-- AI Insights Sidebar (right) -->
-          <aside v-if="aiInsights" class="weather-sidebar">
+          <aside v-if="aiInsights && weatherData" class="weather-sidebar">
             <div class="glass-card ai-panel">
               <div class="ai-header">
                 <span class="ai-badge">✦ AI Insights</span>
               </div>
-              <p class="ai-sub" style="margin-bottom:0.85rem;margin-top:-0.5rem">{{ weatherData.location.name }}</p>
+              <p class="ai-sub" style="margin-bottom:0.85rem;margin-top:-0.5rem">{{ weatherData?.location?.name }}</p>
               <div class="ai-grid">
                 <div class="ai-item"><span class="ai-icon">🎯</span><div class="ai-item-body"><span class="ai-item-label">Activity</span><span class="ai-item-value">{{ aiInsights.activity }}</span></div></div>
                 <div class="ai-item"><span class="ai-icon">👕</span><div class="ai-item-body"><span class="ai-item-label">What to Wear</span><span class="ai-item-value">{{ aiInsights.clothing }}</span></div></div>
