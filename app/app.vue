@@ -496,7 +496,6 @@ function leafStyle(n: number): string {
     </header>
 
     <div class="search-container" @focusout="e => { if (e.currentTarget && !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) showSuggestions = false }">
-    <div class="search-container" @focusout="e => { if (e.currentTarget && !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) showSuggestions = false }">
       <input
         id="city-search"
         v-model="searchQuery"
