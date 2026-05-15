@@ -17,13 +17,13 @@
   --night-from: #0f172a;
   --night-to: #1e1b4b;
 
-  --glass-bg: rgba(255, 255, 255, 0.12);
-  --glass-bg-hover: rgba(255, 255, 255, 0.18);
+  --glass-bg: rgba(0, 0, 0, 0.2);
+  --glass-bg-hover: rgba(0, 0, 0, 0.28);
   --glass-border: rgba(255, 255, 255, 0.22);
   --glass-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
   --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.65);
-  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-secondary: rgba(255, 255, 255, 0.85);
+  --text-muted: rgba(255, 255, 255, 0.6);
 
   --radius-sm: 14px;
   --radius-md: 24px;
@@ -49,6 +49,7 @@ body {
   overflow-x: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 body::-webkit-scrollbar { display: none; }
@@ -412,14 +413,14 @@ body::-webkit-scrollbar { display: none; }
   padding: 1.1rem 8rem 1.1rem 1.5rem;
   border-radius: 50px;
   border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.25);
   color: white;
   font-size: 1rem;
   font-family: var(--font-sans);
   outline: none;
   transition: all 0.35s ease;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .search-input:focus {
@@ -716,9 +717,9 @@ body::-webkit-scrollbar { display: none; }
 }
 
 .detail-icon { opacity: 0.7; margin-bottom: 0.2rem; }
-.detail-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted); }
+.detail-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-secondary); }
 .detail-value { font-size: 1.4rem; font-weight: 700; }
-.detail-unit  { font-size: 0.8rem; color: var(--text-secondary); }
+.detail-unit  { font-size: 0.8rem; color: var(--text-primary); }
 
 /* =====================
    CARD HEADER WITH SCROLL ARROWS
@@ -813,7 +814,7 @@ body::-webkit-scrollbar { display: none; }
   align-items: center;
   gap: 0.2rem;
   font-size: 0.6rem;
-  color: rgba(255,255,255,0.45);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -898,7 +899,7 @@ body::-webkit-scrollbar { display: none; }
 }
 .tile-day       { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; }
 .tile-icon      { display: flex; align-items: center; justify-content: center; margin: 0.2rem 0; }
-.tile-condition { font-size: 0.68rem; color: var(--text-muted); text-align: center; line-height: 1.3; }
+.tile-condition { font-size: 0.68rem; color: var(--text-secondary); text-align: center; line-height: 1.3; }
 .tile-temps     { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.1rem; }
 .tile-hi        { font-size: 0.95rem; font-weight: 700; }
 .tile-lo        { font-size: 0.8rem; color: var(--text-muted); }
@@ -918,7 +919,7 @@ body::-webkit-scrollbar { display: none; }
   align-items: center;
   gap: 0.2rem;
   font-size: 0.6rem;
-  color: rgba(255,255,255,0.45);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -935,8 +936,8 @@ body::-webkit-scrollbar { display: none; }
 }
 
 .sun-item {
-  font-size: 0.6rem;
-  color: rgba(255,255,255,0.4);
+  font-size: 0.65rem;
+  color: var(--text-secondary);
   text-align: center;
 }
 

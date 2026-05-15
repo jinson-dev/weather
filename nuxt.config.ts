@@ -13,5 +13,15 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/png', href: '/favicon.png' }
       ]
     }
+  },
+  vite: {
+    build: {
+      rollupOptions: {
+        onwarn(warning, warn) {
+          if (warning.code === 'SOURCEMAP_BROKEN') return
+          warn(warning)
+        }
+      }
+    }
   }
 })
