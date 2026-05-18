@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watchEffect, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watchEffect, onMounted, onBeforeUnmount, watch } from 'vue'
 // Open-Meteo WMO weather code mappings
 const WMO_CODES: Record<number, { label: string; icon: string; bg: string }> = {
   0:  { label: 'Clear Sky',        icon: 'sun',          bg: 'clear-day'    },
@@ -23,6 +23,8 @@ const WMO_CODES: Record<number, { label: string; icon: string; bg: string }> = {
 }
 
 interface WeatherResult {
+  latitude?: number
+  longitude?: number
   current: {
     temperature_2m: number
     apparent_temperature: number
@@ -66,11 +68,19 @@ interface WeatherResult {
   location: { name: string; country: string; timezone?: string }
 }
 
+interface AstronomyResult {
+  moonrise: string
+  moonset: string
+  moon_phase?: string
+  moon_illumination?: string
+}
+
 const searchQuery = ref('')
 const weatherData = ref<WeatherResult | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const now = ref(new Date())
+const astronomyData = ref<AstronomyResult | null>(null)
 let clockTimer: ReturnType<typeof setInterval> | null = null
 
 // Autocomplete
@@ -295,10 +305,14 @@ const aiInsights = computed(() => {
   const daylightHours = today?.sunrise && today?.sunset
     ? Math.max(0, Math.round((new Date(`1970-01-01T${today.sunset}:00`).getTime() - new Date(`1970-01-01T${today.sunrise}:00`).getTime()) / 36e5 * 10) / 10)
     : null
-  const solarPath = `${sunrise} → ${sunset}`
-  const moonPath = 'Moonrise 8:45 PM → Moonset 7:12 AM' // Placeholder, integrate API for real data
+  const solarPath = `${formatClockTime(sunrise)} → ${formatClockTime(sunset)}`
+  const moonrise = formatClockTime(astronomyData.value?.moonrise)
+  const moonset = formatClockTime(astronomyData.value?.moonset)
+  const moonPath = `${moonrise} → ${moonset}`
+  const moonPhase = astronomyData.value?.moon_phase ?? 'Live lunar data unavailable'
+  const moonIllumination = astronomyData.value?.moon_illumination ?? '—'
 
-  return { clothing, tempTip, feels, uvTip, uv, windTip, wind, humidityTip, humidity, activity, rain, airQuality, solarPath, moonPath, daylightHours }
+  return { clothing, tempTip, feels, uvTip, uv, windTip, wind, humidityTip, humidity, activity, rain, airQuality, solarPath, moonPath, daylightHours, moonPhase, moonIllumination }
 })
 
 const liveClock = computed(() => now.value.toLocaleTimeString('en-US', {
@@ -316,6 +330,22 @@ const liveDate = computed(() => now.value.toLocaleDateString('en-US', {
 
 function formatHour(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
+}
+
+function formatClockTime(value?: string) {
+  if (!value || value === '—') return '—'
+  if (/am|pm/i.test(value)) return value.toUpperCase()
+
+  const [hours, minutes] = value.split(':').map(Number)
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return value
+
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
 }
 
 function getWindDir(deg?: number) {
@@ -385,6 +415,16 @@ async function fetchWeather(city: string = 'London') {
   }
 }
 
+async function fetchAstronomy(lat: number, lon: number) {
+  try {
+    astronomyData.value = await $fetch('/api/astronomy', {
+      query: { lat, lon }
+    })
+  } catch {
+    astronomyData.value = null
+  }
+}
+
 const locating = ref(false)
 
 function useCurrentLocation() {
@@ -430,6 +470,18 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (clockTimer) clearInterval(clockTimer)
 })
+
+watch(
+  () => [weatherData.value?.latitude, weatherData.value?.longitude] as const,
+  ([lat, lon]) => {
+    if (typeof lat === 'number' && typeof lon === 'number') {
+      fetchAstronomy(lat, lon)
+    } else {
+      astronomyData.value = null
+    }
+  },
+  { immediate: true }
+)
 
 // Scroll helpers for horizontal forecast strips
 const hourlyRef = ref<HTMLElement | null>(null)
@@ -823,7 +875,7 @@ function leafStyle(n: number): string {
                     </svg>
                   </div>
                   <p class="sky-path-time">{{ aiInsights.moonPath }}</p>
-                  <p class="sky-path-meta">Lunar timing preview</p>
+                  <p class="sky-path-meta">{{ aiInsights.moonPhase }} · {{ aiInsights.moonIllumination }}% illumination</p>
                 </div>
               </div>
             </div>

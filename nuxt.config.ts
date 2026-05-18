@@ -3,6 +3,9 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
+  runtimeConfig: {
+    weatherApiKey: process.env.WEATHERAPI_KEY,
+  },
   app: {
     head: {
       title: 'SkyCast - Premium Weather Experience',
