@@ -312,37 +312,90 @@ const aiInsights = computed(() => {
     ? Math.max(0, Math.round((new Date(`1970-01-01T${today.sunset}:00`).getTime() - new Date(`1970-01-01T${today.sunrise}:00`).getTime()) / 36e5 * 10) / 10)
     : null
   const solarPath = `${formatClockTime(sunrise)} → ${formatClockTime(sunset)}`
-  const moonrise = formatClockTime(astronomyData.value?.moonrise)
-  const moonset = formatClockTime(astronomyData.value?.moonset)
-  const moonPath = `${moonrise} → ${moonset}`
+  const rawMoonrise = astronomyData.value?.moonrise
+  const rawMoonset = astronomyData.value?.moonset
+  const moonrise = formatClockTime(rawMoonrise)
+  const moonset = formatClockTime(rawMoonset)
+  const hasMoonrise = moonrise !== '—'
+  const hasMoonset = moonset !== '—'
+  const moonPath = hasMoonrise || hasMoonset
+    ? `${hasMoonrise ? moonrise : 'No moonrise'} · ${hasMoonset ? moonset : 'No moonset'}`
+    : 'Moonrise and moonset unavailable today'
   const moonPhase = astronomyData.value?.moon_phase ?? 'Live lunar data unavailable'
   const moonIllumination = astronomyData.value?.moon_illumination ?? '—'
 
   return { clothing, tempTip, feels, uvTip, uv, windTip, wind, humidityTip, humidity, activity, rain, airQuality, solarPath, moonPath, daylightHours, moonPhase, moonIllumination }
 })
 
+const displayTimeZone = computed(() => weatherData.value?.timezone || weatherData.value?.location?.timezone)
+
 const liveClock = computed(() => now.value.toLocaleTimeString('en-US', {
   hour: 'numeric',
   minute: '2-digit',
   second: '2-digit',
   hour12: true,
+  timeZone: displayTimeZone.value,
 }))
 
 const liveDate = computed(() => now.value.toLocaleDateString('en-US', {
   weekday: 'short',
   day: 'numeric',
   month: 'short',
+  timeZone: displayTimeZone.value,
 }))
 
 const safeLiveClock = computed(() => isClientMounted.value ? liveClock.value : '--:--:--')
 const safeLiveDate = computed(() => isClientMounted.value ? liveDate.value : '--- -- ---')
+
+const sunDirection = computed(() => {
+  if (!weatherData.value || !dailyForecast.value.length) return '—'
+
+  const today = dailyForecast.value[0]
+  const sunrise = today?.sunrise
+  const sunset = today?.sunset
+
+  if (!sunrise || !sunset) return '—'
+
+  const timeZone = displayTimeZone.value
+  const nowParts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(now.value)
+
+  const hour = Number(nowParts.find(part => part.type === 'hour')?.value ?? 0)
+  const minute = Number(nowParts.find(part => part.type === 'minute')?.value ?? 0)
+  const currentMinutes = (hour * 60) + minute
+
+  const parseClockMinutes = (value: string) => {
+    const [h, m] = value.split(':').map(Number)
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return null
+    return (h * 60) + m
+  }
+
+  const sunriseMinutes = parseClockMinutes(sunrise)
+  const sunsetMinutes = parseClockMinutes(sunset)
+
+  if (sunriseMinutes == null || sunsetMinutes == null || sunsetMinutes <= sunriseMinutes) return '—'
+  if (currentMinutes < sunriseMinutes || currentMinutes > sunsetMinutes) return 'Below horizon'
+
+  const progress = (currentMinutes - sunriseMinutes) / (sunsetMinutes - sunriseMinutes)
+  const northernHemisphere = (weatherData.value.latitude ?? 0) >= 0
+  const arc = northernHemisphere
+    ? ['E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W']
+    : ['E', 'ENE', 'NE', 'NNE', 'N', 'NNW', 'NW', 'WNW', 'W']
+
+  const index = Math.min(arc.length - 1, Math.max(0, Math.round(progress * (arc.length - 1))))
+  return arc[index]
+})
 
 function formatHour(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
 }
 
 function formatClockTime(value?: string) {
-  if (!value || value === '—') return '—'
+  if (!value || value === '—' || /no moonrise|no moonset/i.test(value)) return '—'
   if (/am|pm/i.test(value)) return value.toUpperCase()
 
   const [hours, minutes] = value.split(':').map(Number)
@@ -615,6 +668,7 @@ function leafStyle(n: number): string {
       <div class="top-clock" aria-label="Current time">
         <span class="top-clock-time">{{ safeLiveClock }}</span>
         <span class="top-clock-date">{{ safeLiveDate }}</span>
+        <span class="top-clock-date">☀ {{ sunDirection }}</span>
       </div>
     </header>
 
