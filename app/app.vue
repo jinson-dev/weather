@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watchEffect, onMounted } from 'vue'
+import { ref, computed, watchEffect, onMounted, onBeforeUnmount } from 'vue'
 // Open-Meteo WMO weather code mappings
 const WMO_CODES: Record<number, { label: string; icon: string; bg: string }> = {
   0:  { label: 'Clear Sky',        icon: 'sun',          bg: 'clear-day'    },
@@ -70,6 +70,8 @@ const searchQuery = ref('')
 const weatherData = ref<WeatherResult | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const now = ref(new Date())
+let clockTimer: ReturnType<typeof setInterval> | null = null
 
 // Autocomplete
 interface GeoSuggestion {
@@ -287,8 +289,30 @@ const aiInsights = computed(() => {
   else if (temp < 10)        activity = 'Hot drinks & indoor comfort ☕'
   else                       activity = 'Casual outdoor walk is fine 🌿'
 
-  return { clothing, tempTip, feels, uvTip, uv, windTip, wind, humidityTip, humidity, activity, rain }
+  const airQuality = 'Good (AQI 25)' // Placeholder, integrate API for real data
+  const sunrise = today?.sunrise ?? '—'
+  const sunset = today?.sunset ?? '—'
+  const daylightHours = today?.sunrise && today?.sunset
+    ? Math.max(0, Math.round((new Date(`1970-01-01T${today.sunset}:00`).getTime() - new Date(`1970-01-01T${today.sunrise}:00`).getTime()) / 36e5 * 10) / 10)
+    : null
+  const solarPath = `${sunrise} → ${sunset}`
+  const moonPath = 'Moonrise 8:45 PM → Moonset 7:12 AM' // Placeholder, integrate API for real data
+
+  return { clothing, tempTip, feels, uvTip, uv, windTip, wind, humidityTip, humidity, activity, rain, airQuality, solarPath, moonPath, daylightHours }
 })
+
+const liveClock = computed(() => now.value.toLocaleTimeString('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: true,
+}))
+
+const liveDate = computed(() => now.value.toLocaleDateString('en-US', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+}))
 
 function formatHour(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
@@ -385,6 +409,10 @@ function useCurrentLocation() {
 
 onMounted(() => {
   if (import.meta.client) {
+    clockTimer = setInterval(() => {
+      now.value = new Date()
+    }, 1000)
+
     const saved = localStorage.getItem('weather_last')
     if (saved) {
       try {
@@ -397,6 +425,10 @@ onMounted(() => {
     }
   }
   fetchWeather('London')
+})
+
+onBeforeUnmount(() => {
+  if (clockTimer) clearInterval(clockTimer)
 })
 
 // Scroll helpers for horizontal forecast strips
@@ -493,6 +525,10 @@ function leafStyle(n: number): string {
         <img src="/logo.png" alt="SkyCast Logo" class="app-logo" />
         <span class="app-name">SkyCast</span>
       </div>
+      <div class="top-clock" aria-label="Current time">
+        <span class="top-clock-time">{{ liveClock }}</span>
+        <span class="top-clock-date">{{ liveDate }}</span>
+      </div>
     </header>
 
     <div class="search-container" @focusout="e => { if (e.currentTarget && !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) showSuggestions = false }">
@@ -582,7 +618,7 @@ function leafStyle(n: number): string {
                 <p class="location-country">{{ weatherData?.location?.country }}</p>
               </div>
               <div class="current-time">
-                {{ new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) }}
+                {{ liveClock }}
               </div>
             </div>
 
@@ -734,6 +770,61 @@ function leafStyle(n: number): string {
                 <div class="ai-item"><span class="ai-icon">💨</span><div class="ai-item-body"><span class="ai-item-label">Wind {{ aiInsights.wind }} km/h</span><span class="ai-item-value">{{ aiInsights.windTip }}</span></div></div>
                 <div class="ai-item"><span class="ai-icon">💧</span><div class="ai-item-body"><span class="ai-item-label">Humidity {{ aiInsights.humidity }}%</span><span class="ai-item-value">{{ aiInsights.humidityTip }}</span></div></div>
                 <div class="ai-item"><span class="ai-icon">🌧️</span><div class="ai-item-body"><span class="ai-item-label">Rain Chance</span><span class="ai-item-value">{{ aiInsights.rain }}% today</span></div></div>
+                <div class="ai-item"><span class="ai-icon">🌬️</span><div class="ai-item-body"><span class="ai-item-label">Air Quality</span><span class="ai-item-value">{{ aiInsights.airQuality }}</span></div></div>
+              </div>
+              <div class="sky-paths">
+                <div class="sky-path-card solar-path-card">
+                  <div class="sky-path-head">
+                    <span class="sky-path-icon">☀️</span>
+                    <span class="sky-path-title">Solar Path</span>
+                  </div>
+                  <div class="sky-visual solar-visual" aria-hidden="true">
+                    <svg viewBox="0 0 220 90" class="sky-visual-svg">
+                      <defs>
+                        <linearGradient id="solarArc" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stop-color="rgba(255,255,255,0.2)" />
+                          <stop offset="50%" stop-color="rgba(250,204,21,0.95)" />
+                          <stop offset="100%" stop-color="rgba(255,255,255,0.2)" />
+                        </linearGradient>
+                      </defs>
+                      <path d="M18 68 Q110 8 202 68" class="sky-arc-path solar-arc" />
+                      <circle cx="110" cy="26" r="11" class="sky-body sun-body" />
+                      <line x1="110" y1="8" x2="110" y2="0" class="sun-ray" />
+                      <line x1="110" y1="52" x2="110" y2="44" class="sun-ray" />
+                      <line x1="92" y1="26" x2="84" y2="26" class="sun-ray" />
+                      <line x1="136" y1="26" x2="128" y2="26" class="sun-ray" />
+                      <line x1="97" y1="13" x2="90" y2="6" class="sun-ray" />
+                      <line x1="123" y1="39" x2="130" y2="46" class="sun-ray" />
+                      <line x1="97" y1="39" x2="90" y2="46" class="sun-ray" />
+                      <line x1="123" y1="13" x2="130" y2="6" class="sun-ray" />
+                      <circle cx="18" cy="68" r="3" class="sky-anchor" />
+                      <circle cx="202" cy="68" r="3" class="sky-anchor" />
+                    </svg>
+                  </div>
+                  <p class="sky-path-time">{{ aiInsights.solarPath }}</p>
+                  <p class="sky-path-meta">
+                    Daylight {{ aiInsights.daylightHours ?? '—' }} hrs
+                  </p>
+                </div>
+                <div class="sky-path-card moon-path-card">
+                  <div class="sky-path-head">
+                    <span class="sky-path-icon">🌙</span>
+                    <span class="sky-path-title">Moon Path</span>
+                  </div>
+                  <div class="sky-visual moon-visual" aria-hidden="true">
+                    <svg viewBox="0 0 220 90" class="sky-visual-svg">
+                      <path d="M18 62 Q110 22 202 62" class="sky-arc-path moon-arc" />
+                      <path d="M114 24a13 13 0 1 0 0 26a11 11 0 1 1 0-26z" class="sky-body moon-body" />
+                      <circle cx="84" cy="28" r="1.8" class="moon-star" />
+                      <circle cx="140" cy="18" r="1.8" class="moon-star" />
+                      <circle cx="156" cy="34" r="1.4" class="moon-star" />
+                      <circle cx="18" cy="62" r="3" class="sky-anchor" />
+                      <circle cx="202" cy="62" r="3" class="sky-anchor" />
+                    </svg>
+                  </div>
+                  <p class="sky-path-time">{{ aiInsights.moonPath }}</p>
+                  <p class="sky-path-meta">Lunar timing preview</p>
+                </div>
               </div>
             </div>
           </aside>

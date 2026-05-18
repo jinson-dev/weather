@@ -104,7 +104,7 @@ body::-webkit-scrollbar { display: none; }
   width: 100%;
   max-width: 1200px;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
   padding: 0 1rem;
@@ -136,6 +136,34 @@ body::-webkit-scrollbar { display: none; }
   background: linear-gradient(to right, #fff, #94a3b8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.top-clock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  min-width: 150px;
+  padding: 0.8rem 1rem;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.top-clock-time {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.top-clock-date {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.58);
 }
 
 /* =====================
@@ -348,6 +376,7 @@ body::-webkit-scrollbar { display: none; }
   width: 100%;
   max-width: 640px;
   position: relative;
+  z-index: 50;
 }
 
 /* =====================
@@ -1035,8 +1064,8 @@ body::-webkit-scrollbar { display: none; }
 .ai-sub { font-size: 0.75rem; color: rgba(255,255,255,0.35); margin-left: auto; }
 
 .ai-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 0.55rem;
 }
 
@@ -1066,6 +1095,125 @@ body::-webkit-scrollbar { display: none; }
 }
 
 .ai-item-value { font-size: 0.8rem; color: rgba(255,255,255,0.88); line-height: 1.35; }
+
+.sky-paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+}
+
+.sky-path-card {
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.06);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+
+.solar-path-card {
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.16), rgba(255,255,255,0.05));
+}
+
+.moon-path-card {
+  background: linear-gradient(180deg, rgba(96, 165, 250, 0.15), rgba(255,255,255,0.05));
+}
+
+.sky-path-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sky-visual {
+  margin: 0.2rem 0 0.75rem;
+  padding: 0.45rem 0.4rem 0.2rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.06);
+}
+
+.solar-visual {
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(250,204,21,0.08));
+}
+
+.moon-visual {
+  background: linear-gradient(180deg, rgba(15,23,42,0.28), rgba(96,165,250,0.08));
+}
+
+.sky-visual-svg {
+  width: 100%;
+  height: 78px;
+  display: block;
+}
+
+.sky-arc-path {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 5 7;
+}
+
+.solar-arc {
+  stroke: rgba(251, 191, 36, 0.85);
+}
+
+.moon-arc {
+  stroke: rgba(147, 197, 253, 0.78);
+}
+
+.sky-body {
+  filter: drop-shadow(0 0 10px rgba(255,255,255,0.18));
+}
+
+.sun-body {
+  fill: rgba(250, 204, 21, 0.95);
+}
+
+.sun-ray {
+  stroke: rgba(254, 240, 138, 0.95);
+  stroke-width: 2.3;
+  stroke-linecap: round;
+}
+
+.moon-body {
+  fill: rgba(226, 232, 240, 0.92);
+}
+
+.moon-star {
+  fill: rgba(255,255,255,0.88);
+}
+
+.sky-anchor {
+  fill: rgba(255,255,255,0.52);
+}
+
+.sky-path-icon {
+  font-size: 1rem;
+}
+
+.sky-path-title {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.62);
+  font-weight: 700;
+}
+
+.sky-path-time {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.94);
+  line-height: 1.45;
+}
+
+.sky-path-meta {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.56);
+}
 
 /* =====================
    WEATHER APP LAYOUT (Grid/Flex System)
@@ -1130,6 +1278,15 @@ body::-webkit-scrollbar { display: none; }
 }
 
 @media (max-width: 860px) {
+  .app-header {
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .top-clock {
+    width: 100%;
+    max-width: 420px;
+    align-items: center;
+  }
   .weather-top-row { flex-direction: column; }
   .weather-sidebar { width: 100%; position: static; }
   .weather-layout { padding: 0 1rem; }
