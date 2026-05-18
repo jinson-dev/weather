@@ -75,6 +75,11 @@ interface AstronomyResult {
   moon_illumination?: string
 }
 
+interface ResolvedLocation {
+  name: string
+  country: string
+}
+
 const searchQuery = ref('')
 const weatherData = ref<WeatherResult | null>(null)
 const loading = ref(false)
@@ -358,23 +363,32 @@ function getWindDir(deg?: number) {
   return dirs[Math.round(deg / 45) % 8]
 }
 
+async function resolveLocationDetails(lat: number, lon: number): Promise<ResolvedLocation> {
+  try {
+    const geo: any = await $fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+      { headers: { 'Accept-Language': 'en' } }
+    )
+
+    return {
+      name: geo.address?.city || geo.address?.town || geo.address?.village || geo.address?.county || 'My Location',
+      country: geo.address?.country_code?.toUpperCase() ?? '',
+    }
+  } catch {
+    return {
+      name: 'My Location',
+      country: '',
+    }
+  }
+}
+
 async function fetchByCoords(lat: number, lon: number, locationName?: string) {
   loading.value = true
   error.value = null
   try {
-    // Reverse geocode to get real city name when none is provided
-    let resolvedName = locationName
-    let resolvedCountry = ''
-    if (!locationName) {
-      try {
-        const geo: any = await $fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
-          { headers: { 'Accept-Language': 'en' } }
-        )
-        resolvedName = geo.address?.city || geo.address?.town || geo.address?.village || geo.address?.county || 'My Location'
-        resolvedCountry = geo.address?.country_code?.toUpperCase() ?? ''
-      } catch { resolvedName = 'My Location' }
-    }
+    const locationPromise = locationName
+      ? Promise.resolve<ResolvedLocation>({ name: locationName, country: '' })
+      : resolveLocationDetails(lat, lon)
 
     const res: any = await $fetch(
       `https://api.open-meteo.com/v1/forecast` +
@@ -385,10 +399,26 @@ async function fetchByCoords(lat: number, lon: number, locationName?: string) {
       `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_hours,precipitation_probability_max,wind_speed_10m_max,uv_index_max,sunrise,sunset` +
       `&timezone=auto&forecast_days=7`
     )
-    weatherData.value = { ...res, location: { name: resolvedName || 'My Location', country: resolvedCountry } }
+
+    weatherData.value = {
+      ...res,
+      location: { name: locationName || 'My Location', country: '' }
+    }
+
+    const resolvedLocation = await locationPromise
+
+    if (weatherData.value?.latitude === res.latitude && weatherData.value?.longitude === res.longitude) {
+      weatherData.value.location = resolvedLocation
+    }
+
     // Persist so next refresh restores this location
     if (import.meta.client) {
-      localStorage.setItem('weather_last', JSON.stringify({ lat, lon, name: resolvedName, country: resolvedCountry }))
+      localStorage.setItem('weather_last', JSON.stringify({
+        lat,
+        lon,
+        name: resolvedLocation.name,
+        country: resolvedLocation.country,
+      }))
     }
   } catch (err: any) {
     error.value = err.message || 'Failed to fetch weather data'
