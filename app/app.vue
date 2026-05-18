@@ -81,6 +81,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const now = ref(new Date())
 const astronomyData = ref<AstronomyResult | null>(null)
+const isClientMounted = ref(false)
 let clockTimer: ReturnType<typeof setInterval> | null = null
 
 // Autocomplete
@@ -328,6 +329,9 @@ const liveDate = computed(() => now.value.toLocaleDateString('en-US', {
   month: 'short',
 }))
 
+const safeLiveClock = computed(() => isClientMounted.value ? liveClock.value : '--:--:--')
+const safeLiveDate = computed(() => isClientMounted.value ? liveDate.value : '--- -- ---')
+
 function formatHour(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
 }
@@ -448,6 +452,7 @@ function useCurrentLocation() {
 }
 
 onMounted(() => {
+  isClientMounted.value = true
   if (import.meta.client) {
     clockTimer = setInterval(() => {
       now.value = new Date()
@@ -578,8 +583,8 @@ function leafStyle(n: number): string {
         <span class="app-name">SkyCast</span>
       </div>
       <div class="top-clock" aria-label="Current time">
-        <span class="top-clock-time">{{ liveClock }}</span>
-        <span class="top-clock-date">{{ liveDate }}</span>
+        <span class="top-clock-time">{{ safeLiveClock }}</span>
+        <span class="top-clock-date">{{ safeLiveDate }}</span>
       </div>
     </header>
 
@@ -670,7 +675,7 @@ function leafStyle(n: number): string {
                 <p class="location-country">{{ weatherData?.location?.country }}</p>
               </div>
               <div class="current-time">
-                {{ liveClock }}
+                {{ safeLiveClock }}
               </div>
             </div>
 
