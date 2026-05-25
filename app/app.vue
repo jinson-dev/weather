@@ -319,7 +319,7 @@ const aiInsights = computed(() => {
   const hasMoonrise = moonrise !== '—'
   const hasMoonset = moonset !== '—'
   const moonPath = hasMoonrise || hasMoonset
-    ? `${hasMoonrise ? moonrise : 'No moonrise'} · ${hasMoonset ? moonset : 'No moonset'}`
+    ? `${hasMoonset ? moonset : 'No moonset'} - ${hasMoonrise ? moonrise : 'No moonrise'}`
     : 'Moonrise and moonset unavailable today'
   const moonPhase = astronomyData.value?.moon_phase ?? 'Live lunar data unavailable'
   const moonIllumination = astronomyData.value?.moon_illumination ?? '—'
